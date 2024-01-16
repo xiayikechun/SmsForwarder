@@ -41,8 +41,8 @@ jobs:
       # 打包release
       - name: Build with Gradle
         run: bash ./gradlew assembleRelease
-      # 生成文件列表并上传 Artifacts
-      - name: Upload Artifacts
+      # 生成文件列表并保存每个文件名到单独的文件中
+      - name: Generate Artifact Paths
         run: |
           # 使用 find 命令生成文件列表
           artifact_files=$(find build/app/outputs/apk/release -name "*.apk")
@@ -50,20 +50,20 @@ jobs:
           # 输出找到的文件列表
           echo "Found APK files: $artifact_files"
           
-          # 将文件列表写入文件
-          echo "$artifact_files" > artifact_files.txt
-          
-          # 逐个上传文件至 Artifacts
+          # 逐个保存每个文件名到单独的文件中
           for file in $artifact_files; do
-            artifact_name=$(basename "$file")  # 获取文件名（不包含路径）
-            echo "Uploading $file to Artifacts with name $artifact_name"
-            echo "$file" >> $GITHUB_ENV  # 将每个文件路径追加到环境变量文件
+            file_name=$(basename "$file")
+            echo "$file_name" > "${file_name}.txt"
           done
+          
+          # 将所有文件名存储到一个文件中，以便上传
+          echo "$artifact_files" > artifact_paths.txt
         shell: bash
-      # 上传 Artifacts，使用真实文件名作为 Artifacts 名称（不包含路径）
+
+      # 上传 Artifacts，使用每个文件的真实文件名作为 Artifacts 名称
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.ARTIFACT_NAMES }}  # 使用不带路径的文件名
-          path: artifact_files.txt  # 使用保存文件路径的文件
+          name: ${{ runner.workspace }}/build/app/outputs/apk/release
+          path: artifact_paths.txt  # 上传包含路径信息的文件
           if-no-files-found: error
