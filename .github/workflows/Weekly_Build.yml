@@ -59,11 +59,12 @@ jobs:
           # 将所有文件名存储到一个文件中，以便上传
           echo "$artifact_files" > artifact_paths.txt
         shell: bash
-
       # 上传 Artifacts，使用每个文件的真实文件名作为 Artifacts 名称
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ runner.workspace }}/build/app/outputs/apk/release
-          path: artifact_paths.txt  # 上传包含路径信息的文件
-          if-no-files-found: error
+        run: |
+          # 读取文件列表，逐个上传文件
+          while IFS= read -r file; do
+            echo "Uploading $file to Artifacts with name $file"
+            echo "::set-output name=artifact::$file"  # 设置输出以便后续步骤使用
+          done < artifact_paths.txt
+        shell: bash
